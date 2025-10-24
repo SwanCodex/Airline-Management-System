@@ -1,0 +1,21 @@
+{
+  "runways": [
+    {
+      "name": "Runway A",
+      "occupied": false,
+      "currentFlight": null,
+      "availableAt": 620,
+      "availableAtStr": "10:20",
+      "totalFlightsHandled": 3
+    },
+    {
+      "name": "Runway B",
+      "occupied": false,
+      "currentFlight": null,
+      "availableAt": 616,
+      "availableAtStr": "10:16",
+      "totalFlightsHandled": 2
+    }
+  ],
+  "timestamp": 1761134109
+}

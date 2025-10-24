@@ -1,0 +1,12 @@
+{
+  "currentTime": 625,
+  "currentTimeStr": "10:25",
+  "algorithm": 2,
+  "algorithmStr": "Priority",
+  "totalFlightsProcessed": 5,
+  "totalWaitingTime": 29,
+  "averageWaitTime": 5.80,
+  "runwayAHandled": 3,
+  "runwayBHandled": 2,
+  "timestamp": 1761134109
+}

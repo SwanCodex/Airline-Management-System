@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airport Runway Scheduling System - Integrated</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-connected {
+            background: #4caf50;
+        }
+
+        .status-disconnected {
+            background: #ef5350;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .panel h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .time-display {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5em;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 20px;
+        }
+
+        .runway-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .runway {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .runway h4 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .runway-status {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .runway-status.occupied {
+            background: rgba(255, 87, 108, 0.3);
+        }
+
+        .runway-status.available {
+            background: rgba(76, 217, 100, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .queue-container {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .flight-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .flight-card.priority-vip {
+            border-left-color: #ffa726;
+        }
+
+        .flight-card.priority-emergency {
+            border-left-color: #ef5350;
+            animation: cardPulse 2s infinite;
+        }
+
+        @keyframes cardPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .flight-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .flight-id {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .badge-scheduled { background: #4caf50; color: white; }
+        .badge-vip { background: #ffa726; color: white; }
+        .badge-emergency { background: #ef5350; color: white; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .control-panel {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .log-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.9em;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            .runway-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✈️ Airport Runway Scheduling System</h1>
+            <p>Real-time Integration with C Backend</p>
+            <p style="margin-top: 10px;">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="connectionStatus">Connecting to backend...</span>
+            </p>
+        </div>
+
+        <div class="time-display">
+            Current Time: <span id="currentTime">--:--</span> | 
+            Algorithm: <span id="currentAlgo">Loading...</span> | 
+            Last Update: <span id="lastUpdate">Never</span>
+        </div>
+
+        <div class="control-panel">
+            <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh Data</button>
+            <button class="btn btn-primary" onclick="toggleAutoRefresh()">
+                <span id="autoRefreshText">▶️ Start Auto-Refresh</span>
+            </button>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h3>🛫 Runway Status</h3>
+                <div class="runway-container" id="runwayContainer">
+                    <div class="runway">
+                        <h4>Runway A</h4>
+                        <div class="runway-status available">
+                            <div>Loading...</div>
+                        </div>
+                    </div>
+                    <div class="runway">
+                        <h4>Runway B</h4>
+                        <div class="runway-status available">
+                            <div>Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>📊 Statistics</h3>
+                <div class="stats-grid" id="statsContainer">
+                    <div class="stat-card">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">Total Flights</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">--</div>
+                        <div class="stat-label">Avg Wait (min)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h3>🛬 Landing Queue</h3>
+                <div class="queue-container" id="landingQueue">
+                    <div class="empty-state">
+                        <div>📭</div>
+                        <p>Loading queue data...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🛫 Takeoff Queue</h3>
+                <div class="queue-container" id="takeoffQueue">
+                    <div class="empty-state">
+                        <div>📭</div>
+                        <p>Loading queue data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3>📝 System Log</h3>
+            <div class="log-container" id="systemLog">
+                <div class="log-entry">[System] Waiting for backend data...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let isAutoRefreshing = false;
+
+        // Load JSON data from backend
+        async function loadJSON(filename) {
+            try {
+                const response = await fetch(`../src/data/${filename}?t=${Date.now()}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`Error loading ${filename}:`, error);
+                return null;
+            }
+        }
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('statusIndicator');
+            const status = document.getElementById('connectionStatus');
+            
+            if (connected) {
+                indicator.className = 'status-indicator status-connected';
+                status.textContent = 'Connected to C Backend';
+            } else {
+                indicator.className = 'status-indicator status-disconnected';
+                status.textContent = 'Backend Not Running';
+            }
+        }
+
+        // Refresh all data
+        async function refreshData() {
+            addLog('Refreshing data from backend...');
+            
+            const stats = await loadJSON('stats.json');
+            const queues = await loadJSON('queues.json');
+            const runways = await loadJSON('runways.json');
+            
+            if (stats || queues || runways) {
+                updateConnectionStatus(true);
+                if (stats) updateStats(stats);
+                if (queues) updateQueues(queues);
+                if (runways) updateRunways(runways);
+                
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+                addLog('✅ Data refreshed successfully');
+            } else {
+                updateConnectionStatus(false);
+                addLog('❌ Cannot connect to backend. Make sure C program is running!');
+            }
+        }
+
+        // Update statistics display
+        function updateStats(data) {
+            const algoMap = {
+                1: 'FCFS',
+                2: 'Priority',
+                3: 'SJF',
+                4: 'Round Robin'
+            };
+            
+            document.getElementById('currentTime').textContent = data.currentTimeStr || '--:--';
+            document.getElementById('currentAlgo').textContent = 
+                data.algorithmStr || algoMap[data.algorithm] || 'Unknown';
+            
+            const statsHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${data.totalFlightsProcessed || 0}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${data.averageWaitTime?.toFixed(1) || 0}</div>
+                    <div class="stat-label">Avg Wait (min)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${data.runwayAHandled || 0}</div>
+                    <div class="stat-label">Runway A</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${data.runwayBHandled || 0}</div>
+                    <div class="stat-label">Runway B</div>
+                </div>
+            `;
+            document.getElementById('statsContainer').innerHTML = statsHTML;
+        }
+
+        // Update queues display
+        function updateQueues(data) {
+            const landingContainer = document.getElementById('landingQueue');
+            const takeoffContainer = document.getElementById('takeoffQueue');
+            
+            if (!data.landingQueue || data.landingQueue.length === 0) {
+                landingContainer.innerHTML = '<div class="empty-state"><div>📭</div><p>No flights in landing queue</p></div>';
+            } else {
+                landingContainer.innerHTML = data.landingQueue.map(f => createFlightCard(f)).join('');
+            }
+            
+            if (!data.takeoffQueue || data.takeoffQueue.length === 0) {
+                takeoffContainer.innerHTML = '<div class="empty-state"><div>📭</div><p>No flights in takeoff queue</p></div>';
+            } else {
+                takeoffContainer.innerHTML = data.takeoffQueue.map(f => createFlightCard(f)).join('');
+            }
+        }
+
+        // Create flight card HTML
+        function createFlightCard(flight) {
+            const priorityClass = flight.priority === 3 ? 'priority-emergency' : 
+                                 flight.priority === 2 ? 'priority-vip' : '';
+            const priorityText = ['', 'Scheduled', 'VIP', 'Emergency'][flight.priority] || 'Unknown';
+            const badgeClass = ['', 'badge-scheduled', 'badge-vip', 'badge-emergency'][flight.priority] || '';
+            
+            return `
+                <div class="flight-card ${priorityClass}">
+                    <div class="flight-info">
+                        <div>
+                            <div class="flight-id">${flight.id}</div>
+                            <div style="color: #666; font-size: 0.9em;">${flight.airline}</div>
+                        </div>
+                        <div>
+                            <span class="badge ${badgeClass}">${priorityText}</span>
+                            <div style="margin-top: 5px; color: #666; font-size: 0.9em;">
+                                ${flight.processingTime} min
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update runways display
+        function updateRunways(data) {
+            if (!data.runways) return;
+            
+            const container = document.getElementById('runwayContainer');
+            
+            const html = data.runways.map(runway => {
+                const statusClass = runway.occupied ? 'occupied' : 'available';
+                const statusText = runway.occupied ? 'OCCUPIED' : 'AVAILABLE';
+                
+                let statusContent = `<div>Status: <strong>${statusText}</strong></div>`;
+                
+                if (runway.occupied && runway.currentFlight) {
+                    statusContent += `
+                        <div style="margin-top: 10px;">
+                            <div>Flight: <strong>${runway.currentFlight.id}</strong></div>
+                            <div>${runway.currentFlight.airline}</div>
+                            <div>${runway.currentFlight.operation}</div>
+                            <div>Available: ${runway.availableAtStr}</div>
+                        </div>
+                    `;
+                }
+                
+                statusContent += `<div style="margin-top: 10px;">Handled: ${runway.totalFlightsHandled} flights</div>`;
+                
+                return `
+                    <div class="runway">
+                        <h4>${runway.name}</h4>
+                        <div class="runway-status ${statusClass}">
+                            ${statusContent}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+
+        // Add log entry
+        function addLog(message) {
+            const logContainer = document.getElementById('systemLog');
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `[${timeStr}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Keep only last 50 entries
+            while (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            if (isAutoRefreshing) {
+                clearInterval(autoRefreshInterval);
+                isAutoRefreshing = false;
+                document.getElementById('autoRefreshText').textContent = '▶️ Start Auto-Refresh';
+                addLog('Auto-refresh stopped');
+            } else {
+                autoRefreshInterval = setInterval(refreshData, 2000); // Refresh every 2 seconds
+                isAutoRefreshing = true;
+                document.getElementById('autoRefreshText').textContent = '⏸️ Stop Auto-Refresh';
+                addLog('Auto-refresh started (every 2 seconds)');
+                refreshData(); // Immediate refresh
+            }
+        }
+
+        // Initial load
+        window.addEventListener('load', () => {
+            addLog('Frontend initialized');
+            addLog('Click "Refresh Data" or "Start Auto-Refresh" to connect to backend');
+            refreshData();
+        });
+    </script>
+</body>
+</html>

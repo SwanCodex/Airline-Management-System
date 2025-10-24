@@ -1,0 +1,36 @@
+{
+  "flights": [
+    {
+      "id": "AI101",
+      "airline": "AirIndia",
+      "source": "Delhi",
+      "destination": "Mumbai",
+      "scheduledTime": 600,
+      "scheduledTimeStr": "10:00",
+      "priority": 1,
+      "priorityStr": "Scheduled",
+      "operation": 0,
+      "operationStr": "Landing",
+      "status": 2,
+      "statusStr": "Completed",
+      "processingTime": 8
+    },
+    {
+      "id": "UK404",
+      "airline": "Vistara",
+      "source": "Hyderabad",
+      "destination": "Chennai",
+      "scheduledTime": 615,
+      "scheduledTimeStr": "10:15",
+      "priority": 1,
+      "priorityStr": "Scheduled",
+      "operation": 1,
+      "operationStr": "Takeoff",
+      "status": 2,
+      "statusStr": "Completed",
+      "processingTime": 5
+    }
+  ],
+  "count": 2,
+  "timestamp": 1761134109
+}
