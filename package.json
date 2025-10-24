@@ -1,0 +1,13 @@
+{
+  "name": "airport-runway-system",
+  "version": "1.0.0",
+  "description": "Serve the airport runway system frontend and start the C backend via npm run dev",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "serve-only": "node server.js --no-backend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}

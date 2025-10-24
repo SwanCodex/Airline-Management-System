@@ -1,0 +1,14 @@
+node_modules/
+*.log
+dist/
+*.exe
+*.o
+*.obj
+airport_system.exe
+src/*.o
+src/*.exe
+npm-debug.log*
+.DS_Store
+/.vscode/
+/.idea/
+.env
