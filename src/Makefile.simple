@@ -1,0 +1,83 @@
+# ============================================================================
+#  Airport Runway Scheduling System - Simple Makefile
+#  A DSA (Data Structures & Algorithms) Project in C
+# ============================================================================
+
+# Compiler and flags
+CC = gcc
+CFLAGS = -Wall -Wextra -g
+TARGET = airport_system
+
+# Source files (including API bridge for frontend)
+SOURCES = main_integrated.c flight.c queue.c scheduler.c api_bridge.c
+OBJECTS = $(SOURCES:.c=.o)
+HEADERS = flight.h queue.h scheduler.h api_bridge.h
+
+# ============================================================================
+#  BUILD TARGETS
+# ============================================================================
+
+# Default target - build everything
+all: $(TARGET)
+	@echo.
+	@echo ========================================
+	@echo   BUILD COMPLETED SUCCESSFULLY!
+	@echo ========================================
+	@echo.
+	@echo To run the program: airport_system.exe
+	@echo.
+
+# Link object files to create executable
+$(TARGET): $(OBJECTS)
+	@echo.
+	@echo Linking objects...
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJECTS)
+	@echo Executable created: $(TARGET).exe
+	@echo.
+
+# Compile source files to object files
+%.o: %.c $(HEADERS)
+	@echo Compiling $<...
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# ============================================================================
+#  UTILITY TARGETS
+# ============================================================================
+
+# Clean compiled files
+clean:
+	@echo.
+	@echo Cleaning up compiled files...
+	@del /Q $(OBJECTS) $(TARGET).exe 2>nul || echo Already clean.
+	@echo Cleanup complete!
+	@echo.
+
+# Rebuild from scratch
+rebuild: clean all
+
+# Run the program
+run: $(TARGET)
+	@echo.
+	@echo Starting Airport Runway System...
+	@echo ========================================
+	@echo.
+	@$(TARGET).exe
+
+# Show help
+help:
+	@echo.
+	@echo ========================================
+	@echo   Airport Runway System - Commands
+	@echo ========================================
+	@echo.
+	@echo  make        - Build the project
+	@echo  make all    - Build the project
+	@echo  make clean  - Remove compiled files
+	@echo  make rebuild- Clean and rebuild
+	@echo  make run    - Build and run program
+	@echo  make help   - Show this help
+	@echo.
+
+# Phony targets (not actual files)
+.PHONY: all clean rebuild run help
+

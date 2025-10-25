@@ -13,6 +13,15 @@ typedef enum {
     EMERGENCY = 3
 } Priority;
 
+// Emergency types (priority order: highest to lowest)
+typedef enum {
+    NO_EMERGENCY = 0,
+    AIRPORT_DELAY = 1,          // Delay due to airport problems (lowest priority)
+    PILOT_UNAVAILABLE = 2,      // Delay due to pilot unavailability
+    AIRPLANE_DEFECT = 3,        // Airplane defect requiring replacement
+    INFLIGHT_EMERGENCY = 4      // In-flight emergency (highest priority)
+} EmergencyType;
+
 // Flight status
 typedef enum {
     WAITING = 0,
@@ -37,6 +46,8 @@ typedef struct Flight {
     Status status;
     Operation operation;
     int processingTime; // time needed for landing/takeoff (in minutes)
+    EmergencyType emergencyType; // Type of emergency
+    char emergencyDetails[200]; // Details about the emergency
     struct Flight* next;
 } Flight;
 
@@ -55,6 +66,7 @@ int countFlights(Flight* head);
 const char* priorityToString(Priority p);
 const char* statusToString(Status s);
 const char* operationToString(Operation o);
+const char* emergencyTypeToString(EmergencyType et);
 void timeToString(int minutes, char* buffer);
 
 #endif

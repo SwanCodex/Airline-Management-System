@@ -27,7 +27,11 @@ typedef struct Scheduler {
     Queue* takeoffQueue;
     PriorityQueue* priorityLandingQueue;
     PriorityQueue* priorityTakeoffQueue;
+    PriorityQueue* emergencyQueue;  // Dedicated emergency priority queue
     Flight* completedFlights;
+    Flight* availablePilots;  // Linked list of available pilots (stored as Flight IDs)
+    Flight* availableAirplanes;  // Linked list of available airplanes
+    Flight* nearbyAirports;  // Linked list of nearby airports for emergency landing
     int currentTime;
     SchedulingAlgorithm algorithm;
     int totalWaitingTime;
@@ -42,6 +46,15 @@ void processScheduling(Scheduler* scheduler);
 void displayDashboard(Scheduler* scheduler);
 void runSimulation(Scheduler* scheduler, int duration);
 void handleEmergency(Scheduler* scheduler);
+void handleEmergencyByType(Scheduler* scheduler, Flight* flight);
+void handleAirplaneDefect(Scheduler* scheduler, Flight* flight);
+void handleAirportDelay(Scheduler* scheduler, Flight* flight);
+void handlePilotUnavailable(Scheduler* scheduler, Flight* flight);
+void handleInflightEmergency(Scheduler* scheduler, Flight* flight);
+Flight* findNearestAirport(Scheduler* scheduler, Flight* flight);
+Flight* findAvailablePilot(Scheduler* scheduler);
+Flight* findAvailableAirplane(Scheduler* scheduler);
+void initializeResources(Scheduler* scheduler);
 void generateStatistics(Scheduler* scheduler);
 void saveLogToFile(Scheduler* scheduler, const char* filename);
 void freeScheduler(Scheduler* scheduler);

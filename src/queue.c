@@ -133,11 +133,17 @@ int isPriorityQueueEmpty(PriorityQueue* pq) {
 int compareFlight(Flight* f1, Flight* f2) {
     if (f1 == NULL || f2 == NULL) return 0;
     
-    // Higher priority number means more urgent (EMERGENCY=3 > VIP=2 > SCHEDULED=1)
+    // First, compare emergency types (INFLIGHT_EMERGENCY=4 > AIRPLANE_DEFECT=3 > PILOT_UNAVAILABLE=2 > AIRPORT_DELAY=1)
+    if (f1->emergencyType != f2->emergencyType) {
+        return f2->emergencyType - f1->emergencyType; // Higher emergency type comes first
+    }
+    
+    // Then, compare flight priority (EMERGENCY=3 > VIP=2 > SCHEDULED=1)
     if (f1->priority != f2->priority) {
         return f2->priority - f1->priority; // Higher priority comes first (min-heap for max priority)
     }
-    // If same priority, compare scheduled time (earlier time first)
+    
+    // If same priority and emergency type, compare scheduled time (earlier time first)
     return f1->scheduledTime - f2->scheduledTime;
 }
 

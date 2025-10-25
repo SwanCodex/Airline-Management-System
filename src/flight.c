@@ -27,6 +27,8 @@ Flight* createFlight(const char* id, const char* airline, const char* src,
     newFlight->status = WAITING;
     newFlight->operation = op;
     newFlight->processingTime = procTime;
+    newFlight->emergencyType = NO_EMERGENCY;
+    strcpy(newFlight->emergencyDetails, "None");
     newFlight->next = NULL;
     
     return newFlight;
@@ -185,6 +187,18 @@ const char* operationToString(Operation o) {
     switch(o) {
         case LANDING: return "Landing";
         case TAKEOFF: return "Takeoff";
+        default: return "Unknown";
+    }
+}
+
+// Convert emergency type to string
+const char* emergencyTypeToString(EmergencyType et) {
+    switch(et) {
+        case NO_EMERGENCY: return "None";
+        case AIRPORT_DELAY: return "Airport Delay";
+        case PILOT_UNAVAILABLE: return "Pilot Unavailable";
+        case AIRPLANE_DEFECT: return "Airplane Defect";
+        case INFLIGHT_EMERGENCY: return "In-Flight Emergency";
         default: return "Unknown";
     }
 }

@@ -1,12 +1,12 @@
 {
   "currentTime": 630,
   "currentTimeStr": "10:30",
-  "algorithm": 1,
-  "algorithmStr": "FCFS",
+  "algorithm": 2,
+  "algorithmStr": "Priority",
   "totalFlightsProcessed": 5,
   "totalWaitingTime": 29,
   "averageWaitTime": 5.80,
   "runwayAHandled": 3,
   "runwayBHandled": 2,
-  "timestamp": 1761399805
+  "timestamp": 1761307350
 }

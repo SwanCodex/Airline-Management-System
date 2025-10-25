@@ -22,13 +22,18 @@ Scheduler* createScheduler(SchedulingAlgorithm algo) {
     scheduler->takeoffQueue = createQueue();
     scheduler->priorityLandingQueue = createPriorityQueue();
     scheduler->priorityTakeoffQueue = createPriorityQueue();
+    scheduler->emergencyQueue = createPriorityQueue();
     scheduler->completedFlights = NULL;
-    scheduler->currentTime = 600; // Start at 10:00 AM
+    scheduler->availablePilots = NULL;
+    scheduler->availableAirplanes = NULL;
+    scheduler->nearbyAirports = NULL;
+    scheduler->currentTime = 600;
     scheduler->algorithm = algo;
     scheduler->totalWaitingTime = 0;
     scheduler->totalFlightsProcessed = 0;
     
     initializeRunways(scheduler);
+    initializeResources(scheduler);
     return scheduler;
 }
 
@@ -417,11 +422,30 @@ void runSimulation(Scheduler* scheduler, int duration) {
 void handleEmergency(Scheduler* scheduler) {
     if (scheduler == NULL) return;
     
-    char id[50], airline[50], src[50], dest[50];
-    int procTime;
+    char id[50], airline[50], src[50], dest[50], details[200];
+    int procTime, emergType;
     
-    printf("\n🚨 EMERGENCY FLIGHT ALERT! 🚨\n");
-    printf("Enter Flight ID: ");
+    printf("\n");
+    printf("═════════════════════════════════════════════════════════════\n");
+    printf("            🚨 EMERGENCY ALERT SYSTEM 🚨\n");
+    printf("═════════════════════════════════════════════════════════════\n");
+    printf("\n");
+    
+    printf("Select Emergency Type:\n");
+    printf("  1. Airport Delay (Lowest Priority)\n");
+    printf("  2. Pilot Unavailability\n");
+    printf("  3. Airplane Defect\n");
+    printf("  4. In-Flight Emergency (Highest Priority)\n");
+    printf("\nEnter choice (1-4): ");
+    
+    if (scanf("%d", &emergType) != 1 || emergType < 1 || emergType > 4) {
+        printf("❌ Invalid input! Defaulting to In-Flight Emergency.\n");
+        emergType = 4;
+        while(getchar() != '\n');
+    }
+    while(getchar() != '\n');
+    
+    printf("\nEnter Flight ID: ");
     if (scanf("%49s", id) != 1) {
         printf("❌ Invalid input!\n");
         while(getchar() != '\n');
@@ -455,18 +479,37 @@ void handleEmergency(Scheduler* scheduler) {
         procTime = 9;
         while(getchar() != '\n');
     }
-    while(getchar() != '\n'); // Clear buffer
+    while(getchar() != '\n');
+    
+    printf("Enter Emergency Details: ");
+    if (fgets(details, sizeof(details), stdin) == NULL) {
+        strcpy(details, "Emergency situation");
+    } else {
+        details[strcspn(details, "\n")] = '\0';
+    }
     
     Flight* emergencyFlight = createFlight(id, airline, src, dest, 
                                           scheduler->currentTime, 
                                           EMERGENCY, LANDING, procTime);
     
     if (emergencyFlight != NULL) {
-        printf("\n🔥 Emergency flight %s added with HIGHEST priority!\n", id);
-        addFlightToScheduler(scheduler, emergencyFlight);
+        emergencyFlight->emergencyType = (EmergencyType)emergType;
+        strncpy(emergencyFlight->emergencyDetails, details, 199);
+        emergencyFlight->emergencyDetails[199] = '\0';
         
-        // Immediately try to assign
-        processScheduling(scheduler);
+        printf("\n");
+        printf("═════════════════════════════════════════════════════════════\n");
+        printf("EMERGENCY REGISTERED: %s\n", emergencyTypeToString(emergencyFlight->emergencyType));
+        printf("═════════════════════════════════════════════════════════════\n");
+        
+        handleEmergencyByType(scheduler, emergencyFlight);
+        
+        // Try to assign immediately if in-flight emergency
+        if (emergType == INFLIGHT_EMERGENCY) {
+            processScheduling(scheduler);
+        }
+        
+        printf("\n✅ Emergency flight %s processed!\n", id);
     } else {
         printf("❌ Failed to create emergency flight!\n");
     }
@@ -577,6 +620,254 @@ void saveLogToFile(Scheduler* scheduler, const char* filename) {
     printf("\n✅ Log saved successfully to %s\n", filename);
 }
 
+// Initialize resources (pilots, airplanes, nearby airports)
+void initializeResources(Scheduler* scheduler) {
+    if (scheduler == NULL) return;
+    
+    // Add sample backup pilots using Flight structure for simplicity
+    Flight* pilot1 = createFlight("PILOT001", "John Smith", "N/A", "N/A", 0, SCHEDULED, LANDING, 0);
+    Flight* pilot2 = createFlight("PILOT002", "Sarah Johnson", "N/A", "N/A", 0, SCHEDULED, LANDING, 0);
+    Flight* pilot3 = createFlight("PILOT003", "Michael Brown", "N/A", "N/A", 0, SCHEDULED, LANDING, 0);
+    
+    addFlight(&scheduler->availablePilots, pilot1);
+    addFlight(&scheduler->availablePilots, pilot2);
+    addFlight(&scheduler->availablePilots, pilot3);
+    
+    // Add backup airplanes
+    Flight* plane1 = createFlight("AIRCRAFT001", "Boeing 737", "Hangar A", "N/A", 0, SCHEDULED, LANDING, 15);
+    Flight* plane2 = createFlight("AIRCRAFT002", "Airbus A320", "Hangar B", "N/A", 0, SCHEDULED, LANDING, 15);
+    Flight* plane3 = createFlight("AIRCRAFT003", "Boeing 777", "Hangar C", "N/A", 0, SCHEDULED, LANDING, 20);
+    
+    addFlight(&scheduler->availableAirplanes, plane1);
+    addFlight(&scheduler->availableAirplanes, plane2);
+    addFlight(&scheduler->availableAirplanes, plane3);
+    
+    // Add nearby airports for emergency landing
+    Flight* airport1 = createFlight("AIRPORT001", "Delhi Airport", "Delhi", "N/A", 0, SCHEDULED, LANDING, 0);
+    airport1->processingTime = 50; // Distance in km
+    Flight* airport2 = createFlight("AIRPORT002", "Mumbai Airport", "Mumbai", "N/A", 0, SCHEDULED, LANDING, 0);
+    airport2->processingTime = 120;
+    Flight* airport3 = createFlight("AIRPORT003", "Bangalore Airport", "Bangalore", "N/A", 0, SCHEDULED, LANDING, 0);
+    airport3->processingTime = 80;
+    Flight* airport4 = createFlight("AIRPORT004", "Chennai Airport", "Chennai", "N/A", 0, SCHEDULED, LANDING, 0);
+    airport4->processingTime = 150;
+    
+    addFlight(&scheduler->nearbyAirports, airport1);
+    addFlight(&scheduler->nearbyAirports, airport2);
+    addFlight(&scheduler->nearbyAirports, airport3);
+    addFlight(&scheduler->nearbyAirports, airport4);
+}
+
+// Find available pilot (uses linked list search - O(n))
+Flight* findAvailablePilot(Scheduler* scheduler) {
+    if (scheduler == NULL || scheduler->availablePilots == NULL) {
+        return NULL;
+    }
+    
+    // Return first available pilot (in real system, would check availability status)
+    Flight* pilot = scheduler->availablePilots;
+    
+    // Remove pilot from available list (reassign them)
+    if (pilot != NULL) {
+        scheduler->availablePilots = scheduler->availablePilots->next;
+        pilot->next = NULL;
+    }
+    
+    return pilot;
+}
+
+// Find available airplane (uses linked list search - O(n))
+Flight* findAvailableAirplane(Scheduler* scheduler) {
+    if (scheduler == NULL || scheduler->availableAirplanes == NULL) {
+        return NULL;
+    }
+    
+    // Return first available airplane
+    Flight* airplane = scheduler->availableAirplanes;
+    
+    // Remove airplane from available list
+    if (airplane != NULL) {
+        scheduler->availableAirplanes = scheduler->availableAirplanes->next;
+        airplane->next = NULL;
+    }
+    
+    return airplane;
+}
+
+// Find nearest airport using linear search on linked list - O(n)
+Flight* findNearestAirport(Scheduler* scheduler, Flight* flight) {
+    if (scheduler == NULL || flight == NULL || scheduler->nearbyAirports == NULL) {
+        return NULL;
+    }
+    
+    Flight* nearest = scheduler->nearbyAirports;
+    Flight* temp = scheduler->nearbyAirports->next;
+    
+    // Linear search for minimum distance (stored in processingTime field as km)
+    while (temp != NULL) {
+        if (temp->processingTime < nearest->processingTime) {
+            nearest = temp;
+        }
+        temp = temp->next;
+    }
+    
+    return nearest;
+}
+
+// Handle Airplane Defect Emergency (Priority: 3)
+// DSA: Uses linked list search to find replacement aircraft
+void handleAirplaneDefect(Scheduler* scheduler, Flight* flight) {
+    printf("\n🔧 AIRPLANE DEFECT EMERGENCY\n");
+    printf("─────────────────────────────────────────────────────────────\n");
+    printf("Flight: %s (%s)\n", flight->flightID, flight->airline);
+    printf("Issue: %s\n", flight->emergencyDetails);
+    printf("\n🔍 Searching for available replacement aircraft...\n");
+    
+    Flight* replacement = findAvailableAirplane(scheduler);
+    
+    if (replacement != NULL) {
+        printf("✅ FOUND: %s (%s) - Ready in %d minutes\n", 
+               replacement->flightID, replacement->airline, replacement->processingTime);
+        printf("📢 ALERT: Maintenance team notified\n");
+        printf("📢 ALERT: Ground crew preparing replacement aircraft\n");
+        printf("📢 ALERT: Passengers to be transferred\n");
+        
+        // Update flight processing time to include aircraft swap
+        flight->processingTime += replacement->processingTime;
+    } else {
+        printf("❌ NO REPLACEMENT AIRCRAFT AVAILABLE\n");
+        printf("📢 ALERT: Flight delayed - waiting for aircraft from other airports\n");
+        printf("📢 ALERT: Passengers notified of delay\n");
+        flight->processingTime += 60; // Add 1 hour delay
+    }
+    
+    printf("─────────────────────────────────────────────────────────────\n");
+}
+
+// Handle Airport Delay (Priority: 1 - Lowest)
+// DSA: Simple alert system, updates timing
+void handleAirportDelay(Scheduler* scheduler, Flight* flight) {
+    printf("\n🕒 AIRPORT DELAY ALERT\n");
+    printf("─────────────────────────────────────────────────────────────\n");
+    printf("Flight: %s (%s)\n", flight->flightID, flight->airline);
+    printf("Issue: %s\n", flight->emergencyDetails);
+    printf("\n📢 ALERT: Air Traffic Control notified\n");
+    printf("📢 ALERT: Passengers informed of delay\n");
+    printf("📢 ALERT: Ground operations coordinating resolution\n");
+    
+    // Add delay to processing time
+    flight->processingTime += 30; // 30 minute delay
+    
+    printf("ℹ️  Estimated additional delay: 30 minutes\n");
+    printf("─────────────────────────────────────────────────────────────\n");
+}
+
+// Handle Pilot Unavailability (Priority: 2)
+// DSA: Uses linked list search to find replacement pilot
+void handlePilotUnavailable(Scheduler* scheduler, Flight* flight) {
+    printf("\n👨‍✈️ PILOT UNAVAILABILITY EMERGENCY\n");
+    printf("─────────────────────────────────────────────────────────────\n");
+    printf("Flight: %s (%s)\n", flight->flightID, flight->airline);
+    printf("Issue: %s\n", flight->emergencyDetails);
+    printf("\n🔍 Searching for available backup pilot...\n");
+    
+    Flight* backupPilot = findAvailablePilot(scheduler);
+    
+    if (backupPilot != NULL) {
+        printf("✅ FOUND: Captain %s (ID: %s)\n", 
+               backupPilot->airline, backupPilot->flightID);
+        printf("📢 ALERT: Backup pilot assigned to Flight %s\n", flight->flightID);
+        printf("📢 ALERT: Crew briefing in progress\n");
+        printf("📢 ALERT: Flight operations updated\n");
+        
+        // Small delay for pilot briefing
+        flight->processingTime += 15;
+    } else {
+        printf("❌ NO BACKUP PILOT AVAILABLE\n");
+        printf("📢 ALERT: Contacting off-duty pilots\n");
+        printf("📢 ALERT: Flight delayed until pilot available\n");
+        flight->processingTime += 45; // Longer delay
+    }
+    
+    printf("─────────────────────────────────────────────────────────────\n");
+}
+
+// Handle In-Flight Emergency (Priority: 4 - Highest)
+// DSA: Uses linked list search to find nearest airport
+void handleInflightEmergency(Scheduler* scheduler, Flight* flight) {
+    printf("\n🚨 IN-FLIGHT EMERGENCY - HIGHEST PRIORITY\n");
+    printf("═════════════════════════════════════════════════════════════\n");
+    printf("Flight: %s (%s)\n", flight->flightID, flight->airline);
+    printf("Route: %s → %s\n", flight->source, flight->destination);
+    printf("EMERGENCY: %s\n", flight->emergencyDetails);
+    printf("\n🆘 INITIATING EMERGENCY PROTOCOLS\n");
+    printf("─────────────────────────────────────────────────────────────\n");
+    
+    printf("🔍 Searching for nearest airport for emergency landing...\n");
+    
+    Flight* nearestAirport = findNearestAirport(scheduler, flight);
+    
+    if (nearestAirport != NULL) {
+        printf("\n✅ NEAREST AIRPORT FOUND:\n");
+        printf("   Airport: %s\n", nearestAirport->airline);
+        printf("   Location: %s\n", nearestAirport->source);
+        printf("   Distance: %d km\n", nearestAirport->processingTime);
+        printf("   ETA: ~%d minutes\n", nearestAirport->processingTime / 8);
+        
+        printf("\n📢 EMERGENCY ALERTS SENT:\n");
+        printf("   ✓ Air Traffic Control - Priority clearance granted\n");
+        printf("   ✓ Emergency services - Ambulance & fire brigade on standby\n");
+        printf("   ✓ Runway %s - Cleared for emergency landing\n", scheduler->runways[0].name);
+        printf("   ✓ Hospital - Medical team prepared\n");
+        printf("   ✓ Security - Law enforcement alerted\n");
+        
+        // Change flight destination to nearest airport
+        strncpy(flight->destination, nearestAirport->source, 49);
+        flight->operation = LANDING; // Force landing operation
+        
+        // Immediate priority - insert at front of emergency queue
+        flight->priority = EMERGENCY;
+        flight->processingTime = 5; // Emergency landing is faster
+        
+        printf("\n🛬 EMERGENCY LANDING SEQUENCE INITIATED\n");
+    } else {
+        printf("❌ ERROR: No nearby airports found in database\n");
+        printf("📢 Continuing to original destination with highest priority\n");
+    }
+    
+    printf("═════════════════════════════════════════════════════════════\n");
+}
+
+// Handle emergency by type (Priority-based dispatch)
+// DSA: Uses switch-case for O(1) dispatch based on emergency type
+void handleEmergencyByType(Scheduler* scheduler, Flight* flight) {
+    if (scheduler == NULL || flight == NULL) return;
+    
+    switch(flight->emergencyType) {
+        case INFLIGHT_EMERGENCY:
+            handleInflightEmergency(scheduler, flight);
+            break;
+        case AIRPLANE_DEFECT:
+            handleAirplaneDefect(scheduler, flight);
+            break;
+        case PILOT_UNAVAILABLE:
+            handlePilotUnavailable(scheduler, flight);
+            break;
+        case AIRPORT_DELAY:
+            handleAirportDelay(scheduler, flight);
+            break;
+        default:
+            printf("ℹ️  No emergency for Flight %s\n", flight->flightID);
+            break;
+    }
+    
+    // Add to emergency priority queue
+    if (flight->emergencyType != NO_EMERGENCY) {
+        insertPriorityQueue(scheduler->emergencyQueue, flight);
+        printf("\n✅ Flight %s added to EMERGENCY PRIORITY QUEUE\n", flight->flightID);
+    }
+}
+
 // Free scheduler
 void freeScheduler(Scheduler* scheduler) {
     if (scheduler == NULL) return;
@@ -585,6 +876,10 @@ void freeScheduler(Scheduler* scheduler) {
     freeQueue(scheduler->takeoffQueue);
     freePriorityQueue(scheduler->priorityLandingQueue);
     freePriorityQueue(scheduler->priorityTakeoffQueue);
+    freePriorityQueue(scheduler->emergencyQueue);
     freeFlightList(&scheduler->completedFlights);
+    freeFlightList(&scheduler->availablePilots);
+    freeFlightList(&scheduler->availableAirplanes);
+    freeFlightList(&scheduler->nearbyAirports);
     free(scheduler);
 }
