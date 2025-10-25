@@ -75,18 +75,20 @@ async function ensureMainMenu() {
 const server = http.createServer((req, res) => {
   try {
     // normalize URL and remove query
-    let requested = decodeURIComponent(req.url.split('?')[0]);
-    if (requested === '/' || requested === '') requested = DEFAULT_PAGE;
+    let requested = decodeURIComponent(req.url.split('?')[0] || '/');
 
-    // prevent path traversal
-    const safePath = path.normalize(requested).replace(/^(\.\.|\/)+/, '');
-
-    // Handle API routes
-    if (safePath.startsWith('api/')) {
-      handleApi(req, res, safePath);
+    // Handle API routes early (works on Windows and POSIX)
+    if (requested.startsWith('/api/')) {
+      const apiPath = requested.replace(/^\/+/, ''); // remove leading slashes
+      handleApi(req, res, apiPath);
       return;
     }
 
+    if (requested === '/' || requested === '') requested = DEFAULT_PAGE;
+
+    // prevent path traversal; normalize for platform and strip leading slashes
+    const normalized = path.normalize(requested);
+    const safePath = normalized.replace(/^([.][.][\\/]|[\\/])+/g, '');
     const filePath = path.join(ROOT, safePath);
 
     // restrict to ROOT
